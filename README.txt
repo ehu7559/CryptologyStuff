@@ -6,7 +6,6 @@ CONTENTS:
 4. Affine/Caesar Cipher Helpers (affinecipher.py)
 5. Vigenere Cipher Breaker (vigenerebreaker.py)
 6. Pollard P-1 factoring RSA attacker (PollardAttack.py)
-7. Pohlig-Hellman Discrete Log attacker (PohligHellmanDiscreteLog.py)
 --------------------------------------------------------------------------------
 INTRODUCTION:
 This folder contains a small collection of Python programs I wrote to facilitate
@@ -63,10 +62,4 @@ This is code salvaged from my solution to a cryptology problem. I have upgraded
 it to work with hexadecimal instead of decimal numbers. It assumes an a1z26
 alphabet, but that can be remedied. As the name suggests, this implementation
 uses the Pollard P-1 method.
---------------------------------------------------------------------------------
-POHLIG-HELLMAN DISCRETE LOG ATTACKER
-File: PohligHellmanDiscreteLog.py
 
-This code calculates the discrete log of two integers mod p using the
-Pohlig-Hellman method and the Chinese Remainder Theorem. I upgraded this to
-take text input.
