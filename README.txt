@@ -26,7 +26,7 @@ is to blame, it is the student that decided MY code was somehow the best choice.
 --------------------------------------------------------------------------------
 PASSWORD MUTATION GENERATOR:
 File: mutator.py
-Suggested Usage: echo <base password> | python3 mutator.py > output.txt
+Suggested Usage: python3 mutator.py [prefix] [base password] [suffix] > outfile
 
 The program takes in a single string and generates a list of reaonable mutations
 of the password, with the mutations being either capitalization or replacement

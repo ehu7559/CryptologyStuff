@@ -1,4 +1,5 @@
-basepass = input("").lower()
+import sys
+
 mutdict = {
     'a':["A","4"],
     'b':["B","6"],
@@ -41,6 +42,7 @@ def mutset(character):
     if character in mutdict.keys():
         return mutdict[character]
     return []
+
 pqueue = []
 
 class Passo:
@@ -74,14 +76,22 @@ def complexityOf(string):
             permutations *= (1 + possiblemuts)
     return permutations
 
-def tryPass(passwordtry):
-    print(passwordtry)
+def tryPass(prefix, password, suffix):
+    print(prefix+password+suffix)
 
-#ACTUAL ATTACK
-pqueue.append(Passo(basepass,len(basepass),-1))
-    
-while len(pqueue)>0:
-    x = pqueue.pop(0)
-    tryPass(x.string)
-    x.fractalize()
+def attack(prefix, basepass, suffix):
+    pqueue.append(Passo(basepass,len(basepass),-1))
+    count = 0
+    while len(pqueue)>0:
+        x = pqueue.pop(0)
+        tryPass(prefix,x.string,suffix)
+        x.fractalize()
+        count += 1
+    return count
 
+#Main function
+if __name__ == "__main__":
+    if len(sys.argv) == 4:
+        attack(sys.argv[1], sys.argv[2], sys.argv[3])
+    else:
+        print("Usage: "+sys.argv[0]+" <prefix> <base password> <suffix>")
