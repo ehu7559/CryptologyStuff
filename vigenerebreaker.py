@@ -5,8 +5,15 @@ alphabet = "abcdefghijklmnopqrstuvwxyz"
 charnumlookup = {}
 for i in range(len(alphabet)):
     charnumlookup[alphabet[i]] = i
+
+#Scoring frequency based on frequency analysis
+scores = {'e': 120, 't': 90, 'a': 80, 'i': 80, 'n': 80, 'o': 80, 's': 80, 'h': 64, 'r': 62, 'd': 44, 'l': 40, 'u': 34, 'c': 30, 'm': 30, 'f': 25, 'w': 20, 'y': 20, 'g': 17, 'p': 17, 'b': 16, 'v': 12, 'k': 8, 'q': 5, 'j': 4, 'x': 4, 'z': 2}
+
+def score_text(txt: str) -> int:
+    return sum([scores(x) for x in sanitize(txt)])
+
 #Helper Methods for normal vigenere operations
-def sanitize(txt):
+def sanitize(txt : str) -> str:
     '''Removes all offending characters to avoid processing them'''
     output = ""
     for achar in txt:
@@ -14,11 +21,11 @@ def sanitize(txt):
             output+=achar
     return output
 
-def tonum(char):
+def tonum(char : str) -> int :
     '''converts character to corresponding integer value'''
     return charnumlookup[char]
 
-def tochar(num):
+def tochar(num : int) -> str:
     '''converts integer to corresponding character value
     has an added safeguard to prevent overflow'''
     return alphabet[num%(len(alphabet))]
@@ -27,7 +34,7 @@ def encryptchar(chara,charb):
     return tochar((tonum(chara)+tonum(charb))%(len(alphabet)))
 
 def decryptchar(chara, charb):
-    difference = tonum(chara)-tonum(charb)
+    difference = tonum(chara) - tonum(charb)
     if difference<0:
         difference += len(alphabet)
     return tochar(difference)
@@ -58,6 +65,7 @@ def decrypt(plaintext,key):
         output+= decryptchar(achar,key[keyindex])
         keyindex = (keyindex+1)%keysize
     return output
+
 #Helper functions for Kasiski Examination
 def cycle(text,index):
     '''cycles a text, helper function for Kasiski Examination'''
@@ -103,7 +111,6 @@ def kasiskiExamination(text):
     return maxindex
 
 #Actual Key Guessing
-englishFrequencies = "etaoinsrhldcumfpgwybvkxjqz"
 
 def breaksets(string,keysize):
     index = 0

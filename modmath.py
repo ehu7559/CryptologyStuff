@@ -1,70 +1,113 @@
+'''
+A lightweight simple modular arithmetic module for academic purposes.
+Use math.pow() and other functions for serious things.
+All quantities are assumed to be integers.
+'''
+
 import math
 
-def extendedEuclidian(a,b):
-    ''' (int a, int b)
-        where a>b>0
-        Recursively finds the greatest common factor of integers a and b'''
-    bfactor = a//b
-    remainder = a%b
+def gcd(a: int, b : int):
+    '''Memory-compact, iterative version of GCD using Extended Euclidian Algorithm'''
+    if a == 0 or b == 0:
+        raise Exception("Cannot find GCD with 0")
+    if a < 0 or b < 0:
+        return gcd(abs(a), abs(b))
+    if a < b:
+        return gcd(b, a) #Flip if they end up not matching.
+    while a % b != 0:
+        a, b = b, a % b
+    return b
 
-    if remainder == 1:
-        return 1
-    elif remainder == 0:
-        return b
-    else:
-        return extendedEuclidian(b,remainder)
-
-def powerRemainder(x,power,modulus):
-    ''' given int x, int power, int modulus --> x^p mod modulus'''
-    squarecount = int(math.log(power,2)) # Gets the number of times you have to square the x.
-    val = x%modulus #initialize x mod n
-    for i in range(1,squarecount+1):
-        val = (val**2)%modulus #calculates the repeated squares of x mod n (x^(2^i) mod n)
-        print(str(x)+"^"+str(2**i)+" = "+str(val) + " mod " + str(modulus))
-
-    #Calculate binsum and print
-    pows = makebinsum(power) #break the power into a binary number so i can create it out of modular squares
-    print("Following powers of two add to the specified power:\n" + str(pows))
-
-    
-    #Calculate output
-    output = 1 #Initializes output
-    for i in pows:
-        output = (output * squarepowremaux(x,i,modulus))%modulus
-    return output
-
-def squarepowremaux(x,timessquared,modulus):
-    val = x%modulus
-    for i in range(timessquared):
-        val = (val**2)%modulus
-    print(str(x)+"^"+str(2**timessquared)+" = "+str(val) + " mod " + str(modulus))
-    return val
-
-def floorlog(num,base=2):
-    output = int(math.log(num,2))
-    if base**output > num:
-        output-=1
-    return output
-
-def makebinsum(num):
-    n = num
-    output = []
-    while n>0:
-        newpow = floorlog(n,2)
-        n -= (2**newpow)
-        output.insert(0,newpow)
-    return output
+#Much faster, more compact, and very, very efficient.
+def mod_exp(b: int, x: int, n: int) -> int:
+    '''Computes residue class b ** x mod n, where all are non-negative integers'''
+    if x == 0:
+        return 1 #Simple catch case
+    acc = 1 #accumulator
+    curr_pow = b
+    while x > 0:
+        acc *= 1 if (x % 2 == 0) else curr_pow
+        acc = acc % n
+        curr_pow = (curr_pow ** 2) % n
+        x = x // 2
+    return acc
 
 def factorsof(num):
+    #Simple factorization
     output=[]
     for i in range(1,int(math.sqrt(num))+1):
-        if num%i == 0:
+        if num % i == 0:
             output.append(i)
             output.append(num//i)
     return output
 
-def gcf(a,b):
-    return extendedEuclidian(a,b)
+def mod_inv(x, n):
+    '''Computes x^-1 mod n'''
+    #Compute GCD using EEA, saving values along the way.
+    a, b = n, x
+    eea_stack = [a, b]
+    
+    #Generate the stack.
+    while a % b != 0:
+        a, b = b, a % b
+        eea_stack.append(b)
 
-def lcm(a,b):
-    return (a*b)/gcf(a,b)
+    #Raise an exception.
+    if b != 1:
+        raise Exception("Modular Inverse of " + str(x) + " does not exist mod " + str(n))
+
+    eea_stack.pop() #Remove the last number (assumed to be a 1)
+
+    high = 1
+    low = -1 * (eea_stack[-2] // eea_stack[-1])
+    while len(eea_stack) > 2:
+        eea_stack.pop() #Remove an element
+        ratio = eea_stack[-2] // eea_stack[-1]
+        high, low = low, (high - (ratio * low))
+
+    return low % n
+
+def gcf(a,b):
+    ''' Alias for Greatest Common Factor -> Greatest Common Denominator'''
+    return gcd(a,b)
+
+def lcm(a: int, b: int) -> int:
+    '''Returns the least common multiple of two integers'''
+    return (a*b)//gcf(a,b)
+
+def ascending_primes():
+    yield 2
+    yield 3
+    prim_prod = 6
+    pointer = 6
+    while True:
+        if gcd(pointer - 1, prim_prod) == 1:
+            yield pointer - 1
+            prim_prod *= pointer - 1
+        if gcd(pointer + 1, prim_prod) == 1:
+            yield pointer + 1
+            prim_prod *= pointer + 1
+        pointer += 6
+
+def prime_factors(num):
+    prime_stream = ascending_primes()
+    p = next(prime_stream)
+    factors = []
+    while p < int(math.sqrt(num) + 1):
+        if num % p == 0:
+            factors.append(p)
+            while num % p == 0:
+                num = num // p
+
+        p = next(prime_stream)
+
+    #if the factor is still non-zero (means large prime factor)
+    if num != 1:
+        factors.append(num)
+    
+    return factors
+
+def amoeba(num):
+    prime_gen = ascending_primes()
+    for i in range(num):
+        print(next(prime_gen))
