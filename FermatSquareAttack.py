@@ -1,14 +1,8 @@
-#Pollard P-1 RSA cracker
-'''
-Originally written in Spring 2020 at UMD, CMSC456.
-
-Modified heavily to make a general application rather than a test answer.
-'''
-
-
+#FERMAT TRIANGULATION FACTORIZATION ATTACK
 
 #Import Math
 from sys import argv
+from math import sqrt
 
 #Helper Functions: Extended Euclidian Algorithm
 def gcd(a: int, b : int):
@@ -66,45 +60,39 @@ def mod_inv(x, n):
 
     return low % n
 
-def factorn(n : int, smoothness = None) -> int:
-    #Used Pollard p-1 method
-    #Assume p-1 has only small prime factors (I'll check for 10000 factors)
-    a = 2
-    i = 0
-    b = a
-    d = 0 #just need d to exist for later
-    solved = False
-    while smoothness is None or i < smoothness:
-        i+=1
-        print(f"Smoothness Level: {i}", end="\r")
-        b = mod_exp(b, i, n) #b^i mod n
-        d = gcd(b-1,n)
-        if d>1:
-            print("Found factor: "+str(d)+ "\t\t\t\t")
-            solved = True
-            break
-    if not solved:
-        raise Exception("Could not factor modulus. Increase smoothness limit!")
-    #List primes
-    p = d
-    q = n//d
-    print("Factorization of n = "+str(p)+" * "+str(q))
-    return (p, q)
+def factorn(n : int, limit = None) -> int:
+    a = int(sqrt(n))
+    if limit is None:
+        limit = a #Gets b^2 in the Fermat attack to just over n.
+    for i in range(limit):
+        rhs = (a + i)**2 - n
+        if rhs < 0:
+            continue
+        b = int(sqrt(rhs)//1)
+        #Adjustment for rounding errors Just in case, for large numbers.
+        while b**2 < rhs: 
+            b += 1
+        print(f"i = {i}, b = {b} ",end = "\r")
+        if b**2 == rhs:
+            return ((a + i - b),(a + i + b))        
+    raise Exception("Could not find factor!")
+
 
 def getDecryptionExponent(e : int, p : int, q : int) -> int:
     return mod_inv(e, (p-1)*(q-1))
 
 if __name__ == "__main__":
-    #USAGE: pollard_attack [encryption modulus] [encryption exponent] [smoothness (optional)]
+    #USAGE: pollard_attack [encryption modulus] [encryption exponent] [limit (optional)]
     main_n = int(argv[1])
     main_e = int(argv[2])
-    main_smoothness = None
+    main_limit = None
     if len(argv) == 4:
-        main_smoothness = int(argv[3])
+        main_limit = int(argv[3])
     print("ATTEMPTING TO FACTOR MODULUS")
-    main_p, main_q = factorn(main_n, smoothness=main_smoothness)
-    print("COMPUTING DECRYPTION EXPONENT")
+    main_p, main_q = factorn(main_n, limit=main_limit)
+    print("\nCOMPUTING DECRYPTION EXPONENT")
     main_d = getDecryptionExponent(main_e, main_p, main_q)
     print("--- RESULTS ---")
-    print(f"FACTORIZATION: {main_p} * {main_q}")
+    print(f"FACTORIZATION: {main_p} * {main_q} = {main_q * main_p}")
     print(f"DECRYPTION EXPONENT: {main_d}")
+#EXAMPLE: fermatsquareattack 14590430507 65537 
