@@ -9,21 +9,17 @@ def gcd(a: int, b : int):
     '''Memory-compact, iterative version of GCD using Extended Euclidian Algorithm'''
     if a == 0 or b == 0:
         raise Exception("Cannot find GCD with 0")
-    if a < 0 or b < 0:
-        return gcd(abs(a), abs(b))
+    a, b = abs(a), abs(b)
     if a < b:
-        return gcd(b, a) #Flip if they end up not matching.
+        a, b = b, a #Flip if they end up not matching.
     while a % b != 0:
         a, b = b, a % b
     return b
 
 #Helper Functions: Modular Exponentiation (and auxiliary functions)
 def mod_exp(b: int, x: int, n: int) -> int:
-    '''Computes residue class b ** x mod n, where all are non-negative integers'''
-    if x == 0:
-        return 1 #Simple catch case
     if x < 0:
-        return mod_exp(mod_inv(b, n), -x, n)
+        b, x = mod_inv(b, n), -x
     acc = 1 #accumulator
     curr_pow = b
     while x > 0:
@@ -76,7 +72,6 @@ def factorn(n : int, limit = None) -> int:
         if b**2 == rhs:
             return ((a + i - b),(a + i + b))        
     raise Exception("Could not find factor!")
-
 
 def getDecryptionExponent(e : int, p : int, q : int) -> int:
     return mod_inv(e, (p-1)*(q-1))

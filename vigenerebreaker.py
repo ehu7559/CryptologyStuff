@@ -1,6 +1,6 @@
-import math
-
+from sys import argv
 alphabet = "abcdefghijklmnopqrstuvwxyz"
+
 #Allow constant time character lookup (Minor speed increase for minimal overhead at start)
 charnumlookup = {}
 for i in range(len(alphabet)):
@@ -10,7 +10,7 @@ for i in range(len(alphabet)):
 scores = {'e': 120, 't': 90, 'a': 80, 'i': 80, 'n': 80, 'o': 80, 's': 80, 'h': 64, 'r': 62, 'd': 44, 'l': 40, 'u': 34, 'c': 30, 'm': 30, 'f': 25, 'w': 20, 'y': 20, 'g': 17, 'p': 17, 'b': 16, 'v': 12, 'k': 8, 'q': 5, 'j': 4, 'x': 4, 'z': 2}
 
 def score_text(txt: str) -> int:
-    return sum([scores(x) for x in sanitize(txt)])
+    return sum([scores[x] for x in sanitize(txt)])
 
 #Helper Methods for normal vigenere operations
 def sanitize(txt : str) -> str:
@@ -30,144 +30,79 @@ def tochar(num : int) -> str:
     has an added safeguard to prevent overflow'''
     return alphabet[num%(len(alphabet))]
 
-def encryptchar(chara,charb):
-    return tochar((tonum(chara)+tonum(charb))%(len(alphabet)))
-
-def decryptchar(chara, charb):
-    difference = tonum(chara) - tonum(charb)
-    if difference<0:
-        difference += len(alphabet)
-    return tochar(difference)
-
-#Vigenere Encrypt and Decrypt Functions
-def encrypt(plaintext,key):
-    text = sanitize(plaintext)
-    keyindex = 0
-    output = ''
-    keysize = len(key)
-    if keysize==0:
-        return text
-    #Encrypt character by character
-    for achar in text:
-        output+= encryptchar(achar,key[keyindex])
-        keyindex = (keyindex+1)%keysize
-    return output
-
-def decrypt(plaintext,key):
-    text = sanitize(plaintext)
-    keyindex = 0
-    output = ''
-    keysize = len(key)
-    if keysize==0:
-        return text
-    #Encrypt character by character
-    for achar in text:
-        output+= decryptchar(achar,key[keyindex])
-        keyindex = (keyindex+1)%keysize
-    return output
-
-#Helper functions for Kasiski Examination
-def cycle(text,index):
-    '''cycles a text, helper function for Kasiski Examination'''
-    if len(text)<2:
-        return text
-    n = index%len(text)
-    if n==0:
-        return text
-    return text[n:len(text)-1]+text[0:n-1]
-
-def countaligned(stra,strb):
-    '''counts the number of aligned characters in two strings'''
-    minlength = min(len(stra),len(strb))
-    output = 0
-    for i in range(minlength):
-        if stra[i]==strb[i]:
-            output+=1
-    return output
-
-def kasiskiShift(text,num):
-    '''returns the number of alignments between text and a num-cycled text'''
-    return countaligned(text,cycle(text,num))
-
-def factors(n):
-    '''Factor listing valid for reasonable-length keys'''
-    output = []
-    for i in range(1,n//2 + 1):
-        if n%i == 0:
-            output.append(i)
-    return output
-
-def kasiskiExamination(text):
-    '''Returns probable key sizes with reliability dependent on text'''
-    #Alignment mapping of the whole text
-    kasiskiFrequencies = [0] #To pad for no-shift, but not count ti.
-    for i in range(1,len(text)-1):
-        kasiskiFrequencies.append(kasiskiShift(text,i))
-    
-    #Look for maximum and return it
-    maxvalue = max(kasiskiFrequencies)
-    maxindex = kasiskiFrequencies.index(maxvalue)
-
-    return maxindex
-
-#Actual Key Guessing
-
-def breaksets(string,keysize):
-    index = 0
-    output = []
-    for i in range(keysize):
-        output.append("")
-    for j in string:
-        output[index]+=j
-        index = (index+1)%keysize
-    return output
-
-def countchars(text):
-    '''frequency analysis'''
-    output = {}
-    for i in alphabet:
-        output[i] = 0
-    for achar in text:
-        if achar in alphabet:
-            output[achar] += 1
-    return output
-    
-def guessKeyChar(charset):
-    '''assume most common is e. A pretty reliable guess as to the character used to encrypt this set'''
-    frequencies = countchars(charset)
-    
-    #Find most frequent character
-    maxcount = 0
-    maxletter = ""
-    for letter in alphabet:
-        if frequencies[letter]>maxcount:
-            maxletter = letter
-            maxcount = frequencies[letter]
-
-    #Decrypt the maxletter. change the e to the next most common if wrong.
-    return decryptchar(maxletter,"e")
-
-def guessKey(text,size):
+def encrypt(text: str, key : str):
     output = ""
-    charsets = breaksets(text,size)
-    for aset in charsets:
-        output+=guessKeyChar(aset)
+    key_ptr = 0
+    for i in range(len(text)):
+        if text[i] in alphabet:
+            output += tochar(tonum(text[i].lower()) + tonum(key[key_ptr].lower()))
+            key_ptr = (key_ptr + 1) % len(key)
+            continue
+        output += text[i]
     return output
-#Run it on the given ciphertext
-def main():
-    ciphertext = input("Enter Ciphertext: ")
-    print("--- INITIALIZING VIGENERE BREAKER ---")
-    print("TEXT: "+ciphertext)
-    print("--- BEGINNING KASISKI ANALYSIS OF TEXT ---")
-    probablekeysize = kasiskiExamination(ciphertext)
-    print("KEY SIZE GUESS: "+ str(probablekeysize))
-    keysizefactors = factors(probablekeysize)
-    print("FACTOR LIST: "+str(keysizefactors))
-    print("--- BEGINNING KEY GUESSING BASED ON SIZES ---")
-    for i in keysizefactors:
-        print("PROCESSING GUESS FOR KEY SIZE: "+str(i))
-        keyguessforsize = guessKey(ciphertext,i)
-        print("GUESS: " + keyguessforsize)
-        print("GUESSED DECRYPTION: "+ decrypt(ciphertext,keyguessforsize))
-    print("--- FINISHED ---")
-main()
+
+def decrypt(text: str, key : str):
+    output = ""
+    key_ptr = 0
+    for i in range(len(text)):
+        if text[i] in alphabet:
+            output += tochar(tonum(text[i].lower()) - tonum(key[key_ptr].lower()))
+            key_ptr = (key_ptr + 1) % len(key)
+            continue
+        output += text[i]
+    return output
+
+def kasiski_analysis(text: str) -> int:
+    text = sanitize(text)
+    best_score = 0
+    best_shift = 0
+    wrap_text = str(text)
+    for i in range(len(text)):
+        wrap_text = wrap_text[-1] + wrap_text[:-1]
+        i_score = 0
+        for j in range(len(text)):
+            i_score += 1 if text[j] == wrap_text[j] else 0
+        if i_score > best_score and i % best_score != 0:
+            best_score = i_score
+            best_shift = i
+        
+    #Catch
+    if best_shift == 0:
+        raise Exception("Text is resistant to Kasiski Analysis")
+    return best_shift
+
+def guess_key_char(text: str) -> str:
+    best_char = None
+    best_score = 0
+    for a in alphabet:
+        a_score = score_text(encrypt(text, a))
+        if a_score > best_score:
+            best_score = a_score
+            best_char = a
+    return a
+
+def guess_key(text: str) -> str:
+    key_str = ""
+    key_length = kasiski_analysis(sanitize(text))
+    
+    sub_sections = ["" for i in range(key_length)]
+    for i in range(len(text)):
+        sub_sections[i % key_length] += text[i]
+
+    for i in range(key_length):
+        key_str += guess_key_char(sub_sections[i])
+    
+    return key_str
+
+def crack_text(text: str) -> str:
+    return decrypt(text, guess_key(text))
+
+if __name__ == "__main__":
+    if len(argv) == 1:
+        raise Exception("Usage: vigenerbreaker [text to break]")
+    text_to_break = None
+    if len(argv) == 2:
+        text_to_break = argv[1]
+    else:
+        text_to_break = " ".join([str(a) for a in argv[1:]])
+    print(crack_text(text_to_break))

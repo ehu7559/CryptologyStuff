@@ -5,31 +5,27 @@ Originally written in Spring 2020 at UMD, CMSC456.
 Modified heavily to make a general application rather than a test answer.
 '''
 
-
-
 #Import Math
 from sys import argv
 
 #Helper Functions: Extended Euclidian Algorithm
 def gcd(a: int, b : int):
-    '''Memory-compact, iterative version of GCD using Extended Euclidian Algorithm'''
+    '''Fixed-space, iterative version of GCD using Extended Euclidian Algorithm'''
     if a == 0 or b == 0:
         raise Exception("Cannot find GCD with 0")
-    if a < 0 or b < 0:
-        return gcd(abs(a), abs(b))
+    if a < 0 or b < 0: #If either of them is negative
+        a, b = abs(a), abs(b) #Take absolute value of both.
     if a < b:
-        return gcd(b, a) #Flip if they end up not matching.
+        a, b = b, a #Flip if they end up the wrong way around.
     while a % b != 0:
         a, b = b, a % b
     return b
 
 #Helper Functions: Modular Exponentiation (and auxiliary functions)
 def mod_exp(b: int, x: int, n: int) -> int:
-    '''Computes residue class b ** x mod n, where all are non-negative integers'''
-    if x == 0:
-        return 1 #Simple catch case
+    '''Fixed-space O(lg(x))-time modular exponentiator.'''
     if x < 0:
-        return mod_exp(mod_inv(b, n), -x, n)
+        b, x = mod_inv(b, n), -x #Invert and negate for negative powers.
     acc = 1 #accumulator
     curr_pow = b
     while x > 0:
@@ -67,8 +63,7 @@ def mod_inv(x, n):
     return low % n
 
 def factorn(n : int, smoothness = None) -> int:
-    #Used Pollard p-1 method
-    #Assume p-1 has only small prime factors (I'll check for 10000 factors)
+    #Uses Pollard p-1 method
     a = 2
     i = 0
     b = a
@@ -85,6 +80,7 @@ def factorn(n : int, smoothness = None) -> int:
             break
     if not solved:
         raise Exception("Could not factor modulus. Increase smoothness limit!")
+    
     #List primes
     p = d
     q = n//d

@@ -7,13 +7,12 @@ All quantities are assumed to be integers.
 import math
 
 def gcd(a: int, b : int):
-    '''Memory-compact, iterative version of GCD using Extended Euclidian Algorithm'''
+    ''' GCD using Extended Euclidian Algorithm'''
     if a == 0 or b == 0:
         raise Exception("Cannot find GCD with 0")
-    if a < 0 or b < 0:
-        return gcd(abs(a), abs(b))
+    a, b = abs(a), abs(b)
     if a < b:
-        return gcd(b, a) #Flip if they end up not matching.
+        a, b = b, a
     while a % b != 0:
         a, b = b, a % b
     return b

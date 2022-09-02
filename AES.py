@@ -1,28 +1,8 @@
-#AES-ECB Implementation
-'''My thanks to Drs. Nathan Manning and Jonathan Katz
+#Pure Python AES-128 Implementation with ECB, CBC, and CTR modes
+'''My thanks to Drs. Nathan Manning and Jonathan Katz''' 
 
-This was done by hand for educational reasons. This is by no means an efficient
-implementation (although efforts have been made to make this as streamlined as
-possible), but it is a very understandable one. One can improve this by first
-changing to a compiled language like C and then modified to take advantage of
-any hardware shortcuts that might be available.
+#Note the total lack of import statements :)
 
-If you are the UMD CS graduate school admissions, please take my work into
-account when doing my admissions decision, as I put no small amount of effort 
-into this little project of mine.
-
-CHALLENGE NOTE:
-While only decryption was required for this challenge, I elected to include the
-code for encryption as well to make for easy importing of AES ECB methods (and
-by extension any other mode of AES). The encryption functions are best placed
-here given that I technically learned them first and that the two processes are,
-of course, related. They will also be used in later challenges, so I will leave
-them here to keep my import statements short.
-'''
-
-#Imports
-
-#Constants and lookup tables
 ROUNDS = {128 : 10, 192 : 12, 256 : 14}
 BLOCK_SIZE_BITS = 128
 BLOCK_SIZE_BYTES = BLOCK_SIZE_BITS//8
@@ -34,7 +14,7 @@ INV_SB_TABLE = bytes([82, 9, 106, 213, 48, 54, 165, 56, 191, 64, 163, 158, 129, 
 SR_TABLE = bytes([0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11])
 INV_SR_TABLE = bytes([0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3])
 ROUND_CONSTANTS = bytes([0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36])  #PRELOADED CONSTANTS FTW
-  
+
 #FUNCTIONS FOR AES
 #Sub bytes
 def sub_bytes(block: bytes) -> bytes:
@@ -91,9 +71,15 @@ def inv_add_round_key(block: bytes, round_key: bytes) -> bytes:
     return add_round_key(block, inv_mix_columns(round_key))
 
 #PKCS7 Padding as per RFC 5652, given length of data to encrypt.
-def get_pad(length):
+def get_pad(length: int) -> bytes:
     pad_length = 16 - (length % 16)
     return bytes([(pad_length) for i in range(pad_length)])
+
+#More useful padding function
+def pad_block(data: bytes) -> bytes:
+    data = bytearray(data)
+    data.extend(get_pad(len(data)))
+    return bytes(data)
 
 #Round Key Extension Function
 def run_key_schedule(keybytes: bytes) -> list[bytes]:
@@ -170,84 +156,20 @@ def decrypt_block_128(block: bytes, aes_key: bytes) -> bytes:
     
     #Final round (with canonical missing inv_mix_columns operation)
     return decrypt_final_round(output,round_keys[0])
-    
-#Main Encryption Function for ECB128
-def encrypt_AES_ECB_128(data: bytes, aes_key: bytes) -> bytes:
-    output = bytearray()
-    
-    #Pad the data if necessary
-    pad = get_pad(len(data))
-    working = bytearray()
-    for b in data:
-        working.append(b)
-        if len(working) == 16:
-            output.extend(encrypt_block_128(bytes(working), aes_key))
-            working = bytearray()
-    
-    working.extend(pad) #Pad for final block
-    output.extend(encrypt_block_128(bytes(working), aes_key)) #Encrypt the last block
 
-    return bytes(output)
-
-#Main Decryption Functions
-def decrypt_AES_ECB_128(data: bytes, aes_key: bytes) -> bytes:
-
-    #BLOCKS: Much more efficient thanks to known block parity
-    num_blocks = len(data)//16
-    output = bytearray()
-
-    #Decrypt
-    for i in range(num_blocks):
-        output.extend(decrypt_block_128(data[16 * i: 16 * (i + 1)], aes_key))
-        
-    #Trim the padding
-    to_trim = output[-1]
-    for i in range(to_trim):
-        if output.pop() not in [to_trim, 0]: #Check that value of pad is still valid
-            raise Exception("Padding not compliant with PKCS#7")
-    
-    return bytes(output)
-
-#Main Encryption Function for CBC mode
-def encrypt_AES_CBC_128(data: bytes, aes_key: bytes, initialization_vector: bytes) -> bytes:
-    output = bytearray()
-    pad = get_pad(len(data))
-    working = bytearray()
-    iv = bytes(initialization_vector)
-    
-    for b in data:
-        working.append(b) #I thought about xoring bitwise here, but len() may be slow.
-        if len(working) == 16:
-            xored = bytes([(working[i] ^ iv[i]) for i in range(16)]) #CBC XOR
-            iv = bytes(encrypt_block_128(xored , aes_key))
-            output.extend(iv)
-            working = bytearray()
-            
-    working.extend(pad) #Pad for final block
-    xored_end = bytes([(working[i] ^ iv[i]) for i in range(16)])
-    output.extend(encrypt_block_128(xored_end, aes_key))
-    return bytes(output)
-
-#Main Decryption Function for CBC mode
-def decrypt_AES_CBC_128(data: bytes, aes_key: bytes, initialization_vector: bytes) -> bytes:
-
-    #BLOCKS: Much more efficient thanks to known block parity
-    num_blocks = len(data)//16
-    output = bytearray()
-    iv = bytes(initialization_vector)
-    vectors = [iv]
-    vectors.extend([bytes(data[16 * i: 16 * (i + 1)]) for i in range(num_blocks)])
-    #Decrypt
-    for i in range(num_blocks):
-        #decrypt
-        plainx = decrypt_block_128(vectors[i+1], aes_key)
-        #xor with vectors[i]
-        plain = bytes([(plainx[x] ^ (vectors[i])[x])for x in range(16)])
-
-        #append to output
-        output.extend(plain)
-    #Return
-    return bytes(output)
+def trim_padding(block: bytes) -> bytes:
+    if len(block) == 0:
+        raise Exception("Trying to trim an empty AES ciphertext!")
+    if len(block) % 16 > 0:
+        raise Exception(f"Expected AES ciphertext with length multiple of 16\nGot ciphertext with length {len(block)} instead!")
+    padding_length = block[-1]
+    if padding_length == 0 or padding_length > 16:
+        raise Exception(f"Expected Padding Length in interval [1,16], found {padding_length} instead!")
+    for i in range(padding_length):
+        if block[-1] != padding_length:
+            raise Exception("Padding Not Compliant with PKCS#7")
+        block = block[:-1]
+    return bytes(block)
 
 def ctr_gen_block(aes_key: bytes, nonce: int, ctr: int) -> bytes:
     
@@ -279,8 +201,122 @@ def aes_ctr_keystream(aes_key: bytes, nonce: int) -> int:
             yield output[i]
         counter += 1
 
+#Validity/Safety Check functions:
+def is_valid_data(data):
+    return type(data) in [bytes, bytearray]
+
+def is_valid_key(key):
+    return is_valid_data(key) and len(key) == 16
+
+def is_valid_iv(iv):
+    return is_valid_key(iv)
+
+def is_valid_pad(plaintext: bytes) -> bool:
+    if len(plaintext) % 16 > 0 or len(plaintext) < 16:
+        return False #Improper length
+    #Truncate to last 16 bytes
+    plaintext = bytearray(plaintext[-16:])
+    pad_len = plaintext[-1]
+    if pad_len > 16 or pad_len == 0:
+        return False
+    for i in range(pad_len):
+        if plaintext.pop() != pad_len:
+            return False
+    return True
+
+def is_valid_ECB_padding(data, key):
+    if not (is_valid_data(data) and len(data) == 16 and is_valid_key()):
+        return False
+    data = data[-16:]
+    data = decrypt_block_128(data, key)
+    return is_valid_pad(data)
+
+def is_valid_CBC_padding(data, key, iv):
+    if not (is_valid_data(data) and len(data) == 16 and is_valid_key()):
+        return False
+    while len(data) > 16:
+        iv, data = data[:16], data[16:]
+    data = decrypt_block_128(data, key)
+    data = bytes([data[i] ^ iv[i] for i in range(16)])
+    return is_valid_pad(data)
+    
+################################################################################
+#           WARNING: FUNCTIONS BELOW THIS LINE ARE EXTERNAL-FACING!            #
+################################################################################
+'''
+Only the below functions should be imported. They are all anyone using AES for
+encryption purposes should need. As a result, these functions have far more
+restrictive checks on incoming data.
+
+'''
+#Main Encryption Function for ECB128
+def encrypt_AES_ECB_128(data: bytes, aes_key: bytes) -> bytes:
+    assert(is_valid_data(data))
+    assert(is_valid_key(aes_key))
+    output = bytearray()
+    padded = False
+    while not padded:
+        if len(data) < 16:
+            data = pad_block(data)
+            padded = True
+        output.extend(encrypt_block_128(bytes(data[:16]), aes_key))
+        data = data[16:] #Remove block
+    return bytes(output)
+
+#Main Decryption Functions
+def decrypt_AES_ECB_128(data: bytes, aes_key: bytes) -> bytes:
+    assert(is_valid_data(data))
+    assert(len(data) % 16 == 0)
+    assert(is_valid_key(aes_key))
+    output = bytearray()
+    while len(data) > 0:
+        new_block = decrypt_block_128(data[:16], aes_key)
+        data = data[16:]
+        if len(data) == 0:
+            new_block = trim_padding(new_block)
+        output.extend(new_block)
+    return bytes(output)
+
+#Main Encryption Function for CBC mode
+def encrypt_AES_CBC_128(data: bytes, aes_key: bytes, iv: bytes) -> bytes:
+    assert(is_valid_data(data))
+    assert(is_valid_key(aes_key))
+    assert(is_valid_iv(iv))
+    output = bytearray()
+    padded = False
+    while not padded:
+        if len(data) < 16:
+            data = pad_block(data)
+            padded = True
+        new_block = bytes([data[:16] ^ iv[i] for i in range(16)])
+        iv = encrypt_block_128(new_block, aes_key)
+        output.extend(iv)
+        data = data[16:]
+    return bytes(output)
+
+#Main Decryption Function for CBC mode
+def decrypt_AES_CBC_128(data: bytes, aes_key: bytes, iv: bytes) -> bytes:
+    assert(is_valid_data(data))
+    assert(len(data) % 16 == 0)
+    assert(is_valid_key(aes_key))
+    assert(is_valid_iv(iv))
+    output = bytearray()
+    while len(data) > 0:
+        plain_block = decrypt_block_128(data[:16], aes_key)
+        plain_block = (bytes([iv[i] ^ plain_block[i] for i in range(16)]))
+        iv = data[:16]
+        data = data[16:]
+        if len(data) == 0: #Trim Last block
+            plain_block = trim_padding(plain_block)
+        output.extend(plain_block)
+    return bytes(output)
+
+
 #CTR Mode Implementation
 def encrypt_AES_CTR(data: bytes, key: bytes, nonce: int) -> bytes:
+    assert(is_valid_data(data))
+    assert(is_valid_key(key))
+    assert(type(nonce) == int)
     stream = aes_ctr_keystream(key, nonce)
     return bytes([i ^ next(stream) for i in data])
 
