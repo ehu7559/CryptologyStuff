@@ -72,7 +72,7 @@ def gcf(a,b):
 
 def lcm(a: int, b: int) -> int:
     '''Returns the least common multiple of two integers'''
-    return (a*b)//gcf(a,b)
+    return (max(a,b) // gcd(a,b))*min(a,b)
 
 def ascending_primes():
     yield 2
