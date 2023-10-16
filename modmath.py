@@ -1,6 +1,6 @@
 '''
 A lightweight simple modular arithmetic module for academic purposes.
-Use math.pow() and other functions for serious things.
+Use math.pow() and other canonical functions for serious things.
 All quantities are assumed to be integers.
 '''
 
@@ -28,7 +28,7 @@ def mod_exp(b: int, x: int, n: int) -> int:
         acc *= 1 if (x % 2 == 0) else curr_pow
         acc = acc % n
         curr_pow = (curr_pow ** 2) % n
-        x = x // 2
+        x = x >> 2
     return acc
 
 def factorsof(num):
@@ -42,7 +42,12 @@ def factorsof(num):
 
 def mod_inv(x, n):
     '''Computes x^-1 mod n'''
+
     #Compute GCD using EEA, saving values along the way.
+    if x > n:
+        x = x % n
+    if x == 0 or n == 0:
+        raise Exception("Modular inverse requires all integers to be positive.")
     a, b = n, x
     eea_stack = [a, b]
     
@@ -51,7 +56,7 @@ def mod_inv(x, n):
         a, b = b, a % b
         eea_stack.append(b)
 
-    #Raise an exception.
+    #Raise an exception if the two numbers are not relatively prime
     if b != 1:
         raise Exception("Modular Inverse of " + str(x) + " does not exist mod " + str(n))
 
@@ -72,7 +77,7 @@ def gcf(a,b):
 
 def lcm(a: int, b: int) -> int:
     '''Returns the least common multiple of two integers'''
-    return (max(a,b) // gcd(a,b))*min(a,b)
+    return (max(a,b) // gcd(a,b)) * min(a,b)
 
 def ascending_primes():
     yield 2
@@ -110,3 +115,32 @@ def amoeba(num):
     prime_gen = ascending_primes()
     for i in range(num):
         print(next(prime_gen))
+
+def int_root(x : int, n : int) -> int:
+    '''Returns the floor of the nth root of x.
+    Works to arbitrary integer precision unlike the sqrt function.
+    (Yes Python thanks for wasting so much of my time)
+    Assumes that x has a real root.
+    '''
+    if x < 0:
+        if n % 2:
+            return -1 * int_root(abs(x), n)
+        raise Exception(f"{x} does not have a real root of degree {n}.")
+    
+    curr = 1
+    acc = 0
+
+    while curr <= x:
+        curr = curr << 1
+
+    while curr:
+        if int(pow(acc + curr, n)) < x:
+            acc += curr
+        curr = curr >> 1 
+
+    return acc
+def miller_rabin_test(num, num_rounds=None):
+    if num_rounds is None:
+        num_rounds = 1000
+
+    pass

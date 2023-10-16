@@ -7,17 +7,15 @@ Modified heavily to make a general application rather than a test answer.
 
 #Import Math
 from sys import argv
+from time import sleep
 
 #Helper Functions: Extended Euclidian Algorithm
 def gcd(a: int, b : int):
     '''Fixed-space, iterative version of GCD using Extended Euclidian Algorithm'''
-    if a == 0 or b == 0:
-        raise Exception("Cannot find GCD with 0")
-    if a < 0 or b < 0: #If either of them is negative
-        a, b = abs(a), abs(b) #Take absolute value of both.
-    if a < b:
-        a, b = b, a #Flip if they end up the wrong way around.
-    while a % b != 0:
+    a, b = abs(a), abs(b)
+    a, b = max(a, b), min(a, b)
+    assert (b > 0)
+    while a % b:
         a, b = b, a % b
     return b
 
@@ -32,7 +30,7 @@ def mod_exp(b: int, x: int, n: int) -> int:
         acc *= 1 if (x % 2 == 0) else curr_pow
         acc = acc % n
         curr_pow = (curr_pow ** 2) % n
-        x = x // 2
+        x = x >> 2
     return acc
 
 #MODULAR INVERSE:
@@ -63,6 +61,7 @@ def mod_inv(x, n):
     return low % n
 
 def factorn(n : int, smoothness = None) -> int:
+    assert(n>0)
     #Uses Pollard p-1 method
     a = 2
     i = 0
@@ -71,8 +70,9 @@ def factorn(n : int, smoothness = None) -> int:
     solved = False
     while smoothness is None or i < smoothness:
         i+=1
-        print(f"Smoothness Level: {i}", end="\r")
-        b = mod_exp(b, i, n) #b^i mod n
+        if i%1000==0: print(f"Smoothness Level: {i}", end="\r")
+        b = pow(a, i, n)#mod_exp(a, i, n) #b^i mod n
+        assert(b > 1)
         d = gcd(b-1,n)
         if d>1:
             print("Found factor: "+str(d)+ "\t\t\t\t")
@@ -84,7 +84,7 @@ def factorn(n : int, smoothness = None) -> int:
     #List primes
     p = d
     q = n//d
-    print("Factorization of n = "+str(p)+" * "+str(q))
+    print(f"Factorization of n = {p} * {q}")
     return (p, q)
 
 def getDecryptionExponent(e : int, p : int, q : int) -> int:

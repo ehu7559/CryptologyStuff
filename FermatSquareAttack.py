@@ -26,7 +26,7 @@ def mod_exp(b: int, x: int, n: int) -> int:
         acc *= 1 if (x % 2 == 0) else curr_pow
         acc = acc % n
         curr_pow = (curr_pow ** 2) % n
-        x = x // 2
+        x = x >> 2
     return acc
 
 #MODULAR INVERSE:
@@ -56,6 +56,22 @@ def mod_inv(x, n):
 
     return low % n
 
+def int_sqrt(n : int) -> int:
+    '''A precise integer-based square root.\nWill effectively round down if n is not a perfect square'''
+    curr = 1
+    acc = 0
+    while curr * curr < n:
+        curr = curr << 1
+    while curr:
+        acc += curr
+        if acc * acc > n:
+            acc -= curr
+        curr = curr >> 1
+    return acc
+
+#haha 1-liner
+is_square = lambda x : (int_sqrt(x))**2 == x
+
 def factorn(n : int, limit = None) -> int:
     a = int(sqrt(n))
     if limit is None:
@@ -74,6 +90,7 @@ def factorn(n : int, limit = None) -> int:
     raise Exception("Could not find factor!")
 
 def getDecryptionExponent(e : int, p : int, q : int) -> int:
+    '''COmputes the decryption exponent'''
     return mod_inv(e, (p-1)*(q-1))
 
 if __name__ == "__main__":

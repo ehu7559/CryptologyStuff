@@ -38,6 +38,7 @@ mutdict = {
     '9':["("],
     '0':["O","o",")"]
     }
+
 def mutset(character):
     if character in mutdict.keys():
         return mutdict[character]

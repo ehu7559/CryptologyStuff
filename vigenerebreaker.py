@@ -15,11 +15,8 @@ def score_text(txt: str) -> int:
 #Helper Methods for normal vigenere operations
 def sanitize(txt : str) -> str:
     '''Removes all offending characters to avoid processing them'''
-    output = ""
-    for achar in txt:
-        if achar in alphabet:
-            output+=achar
-    return output
+    #Okay this function has too many parantheses but I don't care.
+    return "".join(list(filter(lambda x : x in alphabet, list(txt.lower()))))
 
 def tonum(char : str) -> int :
     '''converts character to corresponding integer value'''
@@ -49,7 +46,7 @@ def decrypt(text: str, key : str):
             output += tochar(tonum(text[i].lower()) - tonum(key[key_ptr].lower()))
             key_ptr = (key_ptr + 1) % len(key)
             continue
-        output += text[i]
+        output += text[i] #Catch case for non-alphabetic characters
     return output
 
 def kasiski_analysis(text: str) -> int:
@@ -65,7 +62,6 @@ def kasiski_analysis(text: str) -> int:
         if i_score > best_score and i % best_score != 0:
             best_score = i_score
             best_shift = i
-        
     #Catch
     if best_shift == 0:
         raise Exception("Text is resistant to Kasiski Analysis")
@@ -79,19 +75,19 @@ def guess_key_char(text: str) -> str:
         if a_score > best_score:
             best_score = a_score
             best_char = a
-    return a
+    return best_char
 
 def guess_key(text: str) -> str:
     key_str = ""
     key_length = kasiski_analysis(sanitize(text))
-    
-    sub_sections = ["" for i in range(key_length)]
+
+    #Maybe a better way exists. I don't really care.
+    sub_sections = ["" for _ in range(key_length)]
+
     for i in range(len(text)):
         sub_sections[i % key_length] += text[i]
 
-    for i in range(key_length):
-        key_str += guess_key_char(sub_sections[i])
-    
+    key_str = "".join([str(guess_key_char(s)) for s in sub_sections])
     return key_str
 
 def crack_text(text: str) -> str:
@@ -99,7 +95,7 @@ def crack_text(text: str) -> str:
 
 if __name__ == "__main__":
     if len(argv) == 1:
-        raise Exception("Usage: vigenerbreaker [text to break]")
+        raise Exception("Usage: vigenerebreaker [text to break]")
     text_to_break = None
     if len(argv) == 2:
         text_to_break = argv[1]

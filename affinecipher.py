@@ -1,93 +1,68 @@
-from modmath import mod_inv
+ALPHABET = "abcdefghijklmnopqrstuvwxyz" #Feel free to chance your character set as needed.
 
-ALPHANUM = {'A':1,'B':2,'C':3,'D':4,'E':5,'F':6,'G':7,'H':8,'I':9,'J':10,'K':11,'L':12,'M':13,
-            'N':14,'O':15,'P':16,'Q':17,'R':18,'S':19,'T':20,'U':21,'V':22,'W':23,'X':24,'Y':25,'Z':26}
-NUMALPHA = " ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-affinefactors = [1,3,5,7,9,11,15,17,19,21,23,25]
+def gcd(a: int, b : int):
+    ''' GCD using Extended Euclidian Algorithm'''
+    if a == 0 or b == 0:
+        raise Exception("Cannot find GCD with 0")
+    a, b = abs(a), abs(b)
+    if a < b:
+        a, b = b, a
+    while a % b != 0:
+        a, b = b, a % b
+    return b
 
-def setalphabet(string):
-    '''overwrites the alphabet'''
-    global ALPHABET,NUMALPHA,ALPHANUM
-    ALPHABET = string
-    NUMALPHA = " "+string
-    index = 0
-    for character in ALPHABET:
-        index +=1
-        ALPHANUM[character] = index
-    return None
+valid_affine_factors = filter(lambda x : (gcd(x, len(ALPHABET)) == 1), range(1, len(ALPHABET)))
 
+def mod_inv(x, n):
+    '''Computes x^-1 mod n'''
+    #Compute GCD using EEA, saving values along the way.
+    a, b = n, x
+    eea_stack = [a, b]
+    
+    #Generate the stack.
+    while a % b != 0:
+        a, b = b, a % b
+        eea_stack.append(b)
 
-def chartonum(character):
-    '''string -> int\n enumerates A1Z26 a character in constant time.'''
-    if character in ALPHABET:
-        return ALPHANUM[character]
-    return 0
+    #Raise an exception.
+    if b != 1:
+        raise Exception("Modular Inverse of " + str(x) + " does not exist mod " + str(n))
 
-def chardistance(a,b):
-    return (chartonum(a)-chartonum(b))
+    eea_stack.pop() #Remove the last number (assumed to be a 1)
 
-def caesarshift(text,shift):
-    '''string, int -> string\n Caesar-shifts text with shift shift.'''
-    output = ""
-    for achar in text:
-        if not(achar in ALPHABET):
-            output+=achar
-        else:
-            shiftindex = (chartonum(achar)+shift-1)%26
-            output+= ALPHABET[shiftindex]
+    high = 1
+    low = -1 * (eea_stack[-2] // eea_stack[-1])
+    
+    while len(eea_stack) > 2:
+        eea_stack.pop() #Remove an element
+        ratio = eea_stack[-2] // eea_stack[-1]
+        high, low = low, (high - (ratio * low))
 
-    return output
+    return low % n
 
-def allshifts(text):
-    '''string -> string.'''
-    output = ""
-    for i in range(len(ALPHABET)):
-        output+= caesarshift(text,i)+'\n'
-    return output
+#Generate alphabet->index lookup tables
+ALPHANUM = {y : x for (x, y) in enumerate(list(ALPHABET), start=1)}
+NUMALPHA = {x : y for (x, y) in enumerate(list(ALPHABET), start=1)}
 
-def a1z26(string):
-    '''string -> int[]\n a1-z26 encodes all alphanumeric characters.\nAll others are replaced with 0'''
-    output = []
-    for char in string:
-        output.append(chartonum(char))
-    return output
+#Single-character encryption function
+def apply_affine(char, key):
+    a, b = key
+    if char not in ALPHABET:
+        return char
+    return NUMALPHA[(((a * ALPHANUM[char]) + b) % len(ALPHABET))]
 
-def a0z25(string):
-    output = []
-    for char in string:
-        output.append(chartonum(char)-1)
-    return output
+def apply_deaffine(char, key):
+    a, b = key
+    if gcd(a, len(ALPHABET)) != 1:
+        raise Exception("Destructive Affine key used. Cannot decrypt.")
+    a = mod_inv(a, len(ALPHABET))
+    if char not in ALPHABET:
+        return char
+    return NUMALPHA[((a * ((ALPHANUM[char] - b ) % len(ALPHABET))) % len(ALPHABET))]
 
-def affine(string,a,b):
-    '''string,int,int -> string\n Affine cipher with a0z25 mod 26'''
-    output = ""
-    toks = a0z25(string)
-    for token in toks:
-        output+=ALPHABET[((token)*a+b)%26]
-    return output
+#Encipher/decipher functions
+def affine(text : str, key):
+    return "".join([apply_affine(c, key) for c in list(text)])
 
-def deaffine(string,a,b):
-    '''string, int, int -> string\n Decrypt affine cipher with a0z25 mod 26'''
-    output = ""
-    toks = a0z25(string)
-    for token in toks:
-        lettertoken = token-b
-        addcounter = 0
-        fintoken = 0
-        if a==0:
-            fintoken = 0
-        else:
-            while lettertoken%a > 0 and addcounter<26:
-                lettertoken+=26
-                addcounter+=1
-            fintoken = lettertoken//a
-        output+=ALPHABET[fintoken]
-    return output
-
-def sanitize(string):
-    output = ""
-    for c in string:
-        if c in ALPHABET:
-            output += c
-    return output 
+def deaffine(text : str, key):
+    return "".join([apply_deaffine(c, key) for c in list(text)])
